@@ -32,9 +32,12 @@ const SellerSidebar = () => {
 
 const styles = {
   sidebar: {
-    width: '200px',
+    width: '15%', 
     paddingRight: '20px',
     borderRight: '1px solid #ddd',
+    boxSizing: 'border-box', 
+    position: 'absolute', 
+    height: '20%',
   },
   sectionTitle: {
     fontSize: '18px',
@@ -47,7 +50,7 @@ const styles = {
     margin: 0,
   },
   listItem: {
-    marginBottom: '10px',
+    marginBottom: '10px', // Set a positive margin to avoid overlap
   },
   link: {
     textDecoration: 'none',

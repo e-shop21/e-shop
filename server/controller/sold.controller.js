@@ -3,12 +3,13 @@ const Sold = db.Sold;
 
 exports.createSold = async (req, res) => {
     try {
-        const { product_id, quantity, sold_at } = req.body;
-        if (!product_id || !quantity || !sold_at) {
-            return res.status(400).json({ message: "Product ID, Quantity, and Sold At date are required" });
+        const { product_id, quantity } = req.body;
+        const user_id = req.user.id;
+        if (!product_id || !quantity) {
+            return res.status(400).json({ message: "Product ID and Quantity are required" });
         }
 
-        const newSold = await Sold.create({ product_id, quantity, sold_at });
+        const newSold = await Sold.create({ user_id, product_id, quantity });
 
         res.status(201).json({
             message: "Sold item created successfully",
@@ -103,5 +104,79 @@ exports.deleteSold = async (req, res) => {
     } catch (error) {
         console.error('Error deleting sold item:', error);
         res.status(500).json({ message: "Error deleting sold item", error: error.message });
+    }
+};
+
+exports.createSoldItem = async (req, res) => {
+    try {
+        const { product_id, quantity } = req.body;
+        const user_id = req.user.id;
+        if (!product_id || !quantity) {
+            return res.status(400).json({ message: "Product ID and Quantity are required" });
+        }
+
+        const newSold = await Sold.create({ user_id, product_id, quantity });
+
+        res.status(201).json({
+            message: "Sold item created successfully",
+            sold: newSold
+        });
+    } catch (error) {
+        console.error('Error creating sold item:', error);
+        res.status(500).json({ message: "Error creating sold item", error: error.message });
+    }
+};
+
+exports.getSoldItemsBySeller = async (req, res) => {
+    try {
+        const sellerId = req.user.id;
+        const soldItems = await Sold.findAll({
+            attributes: ['id', 'user_id', 'quantity'],
+            include: [{
+                model: db.Product,
+                as: 'product',
+                where: { seller_id: sellerId },
+                attributes: ['id', 'name', 'price']
+            }]
+        });
+
+        res.status(200).json({
+            message: "Seller's sold items retrieved successfully",
+            soldItems: soldItems
+        });
+    } catch (error) {
+        console.error('Error retrieving seller\'s sold items:', error);
+        res.status(500).json({ message: "Error retrieving seller's sold items", error: error.message });
+    }
+};
+
+exports.getSoldItemsByUser = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        console.log('Fetching sold items for user:', userId);
+        const soldItems = await Sold.findAll({
+            attributes: ['id', 'user_id', 'quantity'],
+            where: { user_id: userId },
+            include: [{
+                model: db.Product,
+                as: 'product',
+                attributes: ['id', 'name', 'price'],
+                include: [{
+                    model: db.Image,
+                    as: 'images',
+                    attributes: ['id', 'url'],
+                    required: false
+                }]
+            }]
+        });
+
+        console.log('Sold items fetched:', soldItems.length);
+        res.status(200).json({
+            message: "User's sold items retrieved successfully",
+            soldItems: soldItems
+        });
+    } catch (error) {
+        console.error('Error retrieving user\'s sold items:', error);
+        res.status(500).json({ message: "Error retrieving user's sold items", error: error.message });
     }
 };

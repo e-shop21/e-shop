@@ -1,16 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import axios from 'axios';
 
 const UserProfile = () => {
   const [profile, setProfile] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    address: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:1274/api/users/get/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const { firstName, lastName, email } = response.data.user;
+      setProfile(prevProfile => ({ ...prevProfile, firstName, lastName, email }));
+    } catch (error) {
+      console.error('Error fetching user profile:', error.response || error);
+      setError('Failed to fetch profile. Please try again.');
+    }
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -20,15 +40,44 @@ const UserProfile = () => {
     }));
   };
 
-
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission logic here
-    console.log('Profile updated:', profile);
-  };
+    setError('');
+    setSuccess('');
 
-  
+    if (profile.newPassword !== profile.confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put('http://localhost:1274/api/users/put/profile', {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        currentPassword: profile.currentPassword,
+        newPassword: profile.newPassword
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        setSuccess('Profile updated successfully');
+        setProfile(prevProfile => ({
+          ...prevProfile,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }));
+      } else {
+        setError(response.data.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError(error.response?.data?.message || 'Failed to update profile. Please try again.');
+    }
+  };
 
   return (
     <div style={styles.container}>
@@ -37,12 +86,15 @@ const UserProfile = () => {
         <span style={styles.navSeparator}>/</span>
         <span style={styles.navCurrent}>My Account</span>
       </nav>
-      <div style={styles.welcome}>Welcome! Md Rimel</div>
+
       
       <div style={styles.content}>
         <Sidebar />
+        <div style={styles.welcome}>Welcome! {profile.firstName} {profile.lastName}</div>
         <main style={styles.main}>
           <h2 style={styles.title}>Edit Your Profile</h2>
+          {error && <div style={styles.error}>{error}</div>}
+          {success && <div style={styles.success}>{success}</div>}
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.formRow}>
               <div style={styles.formGroup}>
@@ -70,54 +122,48 @@ const UserProfile = () => {
               <div style={styles.formGroup}>
                 <label htmlFor="email">Email</label>
                 <input
-                  type="email"
+                  type="text"
                   id="email"
                   value={profile.email}
                   onChange={handleChange}
                   style={styles.input}
                 />
               </div>
+            </div>
+            <h3 style={styles.subtitle}>Change Password</h3>
+            <div style={styles.formRow}>
               <div style={styles.formGroup}>
-                <label htmlFor="address">Address</label>
+                <label htmlFor="currentPassword">Current Password</label>
                 <input
-                  type="text"
-                  id="address"
-                  value={profile.address}
+                  type="password"
+                  id="currentPassword"
+                  value={profile.currentPassword}
                   onChange={handleChange}
                   style={styles.input}
                 />
               </div>
             </div>
-            <h3 style={styles.subtitle}>Password Changes</h3>
-            <div style={styles.formGroup}>
-              <label htmlFor="currentPassword">Current Password</label>
-              <input
-                type="password"
-                id="currentPassword"
-                value={profile.currentPassword}
-                onChange={handleChange}
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="newPassword">New Password</label>
-              <input
-                type="password"
-                id="newPassword"
-                value={profile.newPassword}
-                onChange={handleChange}
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="confirmPassword">Confirm New Password</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={profile.confirmPassword}
-                onChange={handleChange}
-                style={styles.input}
-              />
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label htmlFor="newPassword">New Password</label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  value={profile.newPassword}
+                  onChange={handleChange}
+                  style={styles.input}
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label htmlFor="confirmPassword">Confirm New Password</label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  value={profile.confirmPassword}
+                  onChange={handleChange}
+                  style={styles.input}
+                />
+              </div>
             </div>
             <div style={styles.buttonGroup}>
               <button type="button" style={styles.cancelButton}>Cancel</button>
@@ -210,6 +256,14 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
+  },
+  error: {
+    color: '#e74c3c',
+    marginBottom: '10px',
+  },
+  success: {
+    color: '#2ecc71',
+    marginBottom: '10px',
   },
 };
 

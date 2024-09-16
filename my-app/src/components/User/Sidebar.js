@@ -1,35 +1,25 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
+  const location = useLocation();
+
   return (
     <aside style={styles.sidebar}>
-      <section>
-        <h3 style={styles.sectionTitle}>Manage My Account</h3>
-        <ul style={styles.list}>
-          <li style={styles.listItem}>
-            <a href="#" style={styles.activeLink}>My Profile</a>
-          </li>
-          <li style={styles.listItem}>
-            <a href="#" style={styles.link}>Address Book</a>
-          </li>
-          <li style={styles.listItem}>
-            <a href="#" style={styles.link}>My Payment Options</a>
-          </li>
-        </ul>
+      <section style={styles.section}>
+        <Link to="/user/profile" style={location.pathname === '/user/profile' ? styles.activeLink : styles.link}>
+          <h3 style={styles.sectionTitle}>Manage My Account</h3>
+        </Link>
       </section>
-      <section>
-        <h3 style={styles.sectionTitle}>My Orders</h3>
-        <ul style={styles.list}>
-          <li style={styles.listItem}>
-            <a href="#" style={styles.link}>My Returns</a>
-          </li>
-          <li style={styles.listItem}>
-            <a href="#" style={styles.link}>My Cancellations</a>
-          </li>
-        </ul>
+      <section style={styles.section}>
+        <Link to="/user/orders" style={location.pathname === '/user/orders' ? styles.activeLink : styles.link}>
+          <h3 style={styles.sectionTitle}>My Orders</h3>
+        </Link>
       </section>
-      <section>
-        <h3 style={styles.sectionTitle}>My Wishlist</h3>
+      <section style={styles.section}>
+        <Link to="/user/wishlist" style={location.pathname === '/user/wishlist' ? styles.activeLink : styles.link}>
+          <h3 style={styles.sectionTitle}>My Wishlist</h3>
+        </Link>
       </section>
     </aside>
   );
@@ -40,18 +30,16 @@ const styles = {
     width: '200px',
     paddingRight: '20px',
     borderRight: '1px solid #ddd',
+    boxSizing: 'border-box',
+    position: 'relative',
+    minHeight: '100%',
+  },
+  section: {
+    marginBottom: '20px',
   },
   sectionTitle: {
     fontSize: '18px',
     fontWeight: 'bold',
-    marginBottom: '10px',
-  },
-  list: {
-    listStyleType: 'none',
-    padding: 0,
-    margin: 0,
-  },
-  listItem: {
     marginBottom: '10px',
   },
   link: {

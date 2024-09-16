@@ -27,18 +27,7 @@ function Footer() {
                 color: 'black'
               }} 
             />
-            <button 
-              style={{
-                backgroundColor: 'white',
-                color: 'black',
-                padding: '8px 16px',
-                borderRadius: '0 4px 4px 0',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Subscribe to E-STORE
-            </button>
+            
           </div>
         </div>
         <div>

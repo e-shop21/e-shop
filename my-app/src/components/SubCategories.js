@@ -1,24 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import '../index.css';
 import CategoryCard from './CategoryCard';
+import { fetchSubcategories } from '../api/api';
 
 function SubCategories({ selectedCategoryId, onSubCategorySelect }) {
-  const subcategories = [
-    { id: 1, name: 'Gaming Laptops', category_id: 1 },
-    { id: 2, name: 'Business Laptops', category_id: 1 },
-    { id: 3, name: 'Android Phones', category_id: 2 },
-    { id: 4, name: 'iPhones', category_id: 2 },
-    { id: 5, name: 'iPads', category_id: 3 },
-    { id: 6, name: 'Smartwatches', category_id: 4 },
-  ];
+  
+  const [subcategories, setSubcategories] = useState([]);
 
-  const filteredSubcategories = subcategories.filter(sub => sub.category_id === selectedCategoryId);
+  useEffect(() => {
+    const loadSubcategories = async () => {
+      if (selectedCategoryId) {
+        const fetchedSubcategories = await fetchSubcategories(selectedCategoryId);
+        setSubcategories(fetchedSubcategories);
+      }
+    };
+    loadSubcategories();
+  }, [selectedCategoryId]);
 
   return (
     <section className="browse-by-category-container">
       <h2 className="explore-products-heading">Subcategories</h2>
       <div className="category-row">
-        {filteredSubcategories.map(subcategory => (
+        {subcategories.map(subcategory => (
           <div key={subcategory.id} onClick={() => onSubCategorySelect(subcategory.id)}>
             <CategoryCard category={subcategory} />
           </div>

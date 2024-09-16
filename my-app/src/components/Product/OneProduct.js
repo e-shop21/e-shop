@@ -1,24 +1,136 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import axios from 'axios';
 
 const OneProduct = () => {
-
-
-  const exampleImages = [
-    "https://wonderfulengineering.com/wp-content/uploads/2020/11/10-best-Wireless-Earbuds-8-995x1024.jpg",
-    "https://wonderfulengineering.com/wp-content/uploads/2020/11/10-best-Wireless-Earbuds-8-995x1024.jpg",
-    "https://wonderfulengineering.com/wp-content/uploads/2020/11/10-best-Wireless-Earbuds-8-995x1024.jpg",
-    "https://wonderfulengineering.com/wp-content/uploads/2020/11/10-best-Wireless-Earbuds-8-995x1024.jpg"
-  ];
-
-
   const { productId } = useParams();
   const location = useLocation();
-  const product = location.state?.product;
-
-  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || '');
-  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || '');
+  const [product, setProduct] = useState(location.state?.product);
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [availableQuantity, setAvailableQuantity] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  useEffect(() => {
+    fetchProductDetails();
+
+    const handleClick = () => { setTimeout(() => {
+      setErrorMessage('');
+  }, 1000);
+  };
+
+    document.addEventListener('click', handleClick);
+
+    return () => {
+        document.removeEventListener('click', handleClick);
+    };
+}, [productId]);
+
+  const fetchProductDetails = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const [productResponse, wishlistResponse] = await Promise.all([
+      axios.get(`http://localhost:1274/api/products/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      axios.get('http://localhost:1274/api/wishlist/user', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ]);
+
+    setProduct(productResponse.data.product);
+    setAvailableQuantity(productResponse.data.product.quantity);
+    setSelectedColor(productResponse.data.product.colors?.[0] || '');
+    setSelectedSize(productResponse.data.product.sizes?.[0] || '');
+
+    const isProductInWishlist = wishlistResponse.data.wishlists.some(
+      item => item.product_id === productId
+    );
+    setIsInWishlist(isProductInWishlist);
+  } catch (error) {
+    console.error('Error fetching product details:', error);
+    setErrorMessage("Error fetching product details");
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+  const updateQuantity = (newQuantity) => {
+    if (newQuantity < 1) {
+      setErrorMessage("Quantity cannot be less than 1");
+      return;
+    }
+    if (newQuantity > availableQuantity) {
+      setErrorMessage(`Only ${availableQuantity} items available`);
+      return;
+    }
+    setQuantity(newQuantity);
+    setErrorMessage('');
+  };
+
+  const handleBuyNow = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      for (let i = 0; i < quantity; i++) {
+        await axios.post('http://localhost:1274/api/cart', {
+          product_id: productId,
+          quantity: 1
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      console.log(`Added ${quantity} of product ${productId} to cart`);
+      setErrorMessage('Product added to cart successfully');
+    } catch (error) {
+      console.error('Error adding product to cart:', error);
+      setErrorMessage("Error adding product to cart");
+    }
+  };
+
+
+
+
+  const handleWishlist = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setErrorMessage('Please sign in to add to wishlist');
+        return;
+      }
+  
+      const endpoint = isInWishlist
+        ? `http://localhost:1274/api/wishlist/remove/${productId}`
+        : 'http://localhost:1274/api/wishlist';
+  
+      const method = isInWishlist ? 'delete' : 'post';
+  
+      // Decode the token to get the user ID
+      const decodedToken = JSON.parse(atob(token.split('.')[1]));
+      const userId = decodedToken.id;
+  
+      await axios({
+        method,
+        url: endpoint,
+        headers: { Authorization: `Bearer ${token}` },
+        data: isInWishlist ? {} : { user_id: userId, product_id: productId }
+      });
+  
+      setIsInWishlist(!isInWishlist);
+      setErrorMessage(isInWishlist ? 'Removed from wishlist' : 'Added to wishlist');
+    } catch (error) {
+      console.error('Error updating wishlist:', error);
+      setErrorMessage('Error updating wishlist');
+    }
+  };
 
   if (!product) {
     return <div>Product not found</div>;
@@ -26,41 +138,39 @@ const OneProduct = () => {
 
   const rating = Number.isInteger(product.rating) ? product.rating : 0;
 
- 
-return (
-  <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem 1rem', display: 'flex', justifyContent: 'center', gap: '2rem' }}>
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: '1fr 3fr', 
-      gridTemplateRows: 'repeat(3, 1fr)', 
-      gap: '0.5rem', 
-      width: '633.6px',
-      height: '440px',
-      border: '1px solid black', 
-      boxSizing: 'border-box',
-      padding: '0.5rem',
-      marginTop: '79.2px'
-    }}>
-      <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-        <img src={exampleImages[0]} alt="Product 1" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-      </div>
-      <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-        <img src={exampleImages[1]} alt="Product 2" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-      </div>
-      <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-        <img src={exampleImages[2]} alt="Product 3" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-      </div>
+  return (
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem 1rem', display: 'flex', justifyContent: 'center', gap: '2rem' }}>
       <div style={{ 
-        gridColumn: '2', 
-        gridRow: '1 / span 3', 
-        width: '100%', 
-        height: '100%', 
-        overflow: 'hidden'
+        display: 'grid', 
+        gridTemplateColumns: '1fr 3fr', 
+        gridTemplateRows: 'repeat(3, 1fr)', 
+        gap: '0.5rem', 
+        width: '633.6px',
+        height: '440px',
+        border: '1px solid black', 
+        boxSizing: 'border-box',
+        padding: '0.5rem',
+        marginTop: '79.2px'
       }}>
-        <img src={exampleImages[0]} alt="Main Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        {product.images && product.images.slice(0, 3).map((image, index) => (
+          <div key={index} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
+            <img src={image.url} alt={`Product ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        ))}
+        <div style={{ 
+          gridColumn: '2', 
+          gridRow: '1 / span 3', 
+          width: '100%', 
+          height: '100%', 
+          overflow: 'hidden'
+        }}>
+          <img 
+            src={product.images && product.images.length > 0 ? product.images[0].url : '/placeholder/default.jpg'} 
+            alt="Main Product" 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+          />
+        </div>
       </div>
-    </div>
-    
       
       <div style={{ flex: '1', maxWidth: '600px' }}>
         <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{product.name}</h1>
@@ -116,17 +226,19 @@ return (
         
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '0.375rem' }}>
-            <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ padding: '0.25rem 0.75rem', fontSize: '1.25rem' }}>-</button>
+            <button onClick={() => updateQuantity(quantity - 1)} style={{ padding: '0.25rem 0.75rem', fontSize: '1.25rem' }}>-</button>
             <span style={{ padding: '0.25rem 0.75rem' }}>{quantity}</span>
-            <button onClick={() => setQuantity(quantity + 1)} style={{ padding: '0.25rem 0.75rem', fontSize: '1.25rem' }}>+</button>
+            <button onClick={() => updateQuantity(quantity + 1)} style={{ padding: '0.25rem 0.75rem', fontSize: '1.25rem' }}>+</button>
           </div>
-          <button style={{ marginLeft: '1rem', backgroundColor: '#f56565', color: 'white', padding: '0.5rem 2rem', borderRadius: '0.375rem' }}>Buy Now</button>
-          <button style={{ marginLeft: '1rem', border: '1px solid black', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}>
-            <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
+          <button onClick={handleBuyNow} style={{ marginLeft: '1rem', backgroundColor: '#f56565', color: 'white', padding: '0.5rem 2rem', borderRadius: '0.375rem' }}>Buy Now</button>
+          <button onClick={handleWishlist} style={{ marginLeft: '1rem', border: '1px solid black', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}>
+  <svg style={{ width: '1.5rem', height: '1.5rem', fill: isInWishlist ? 'red' : 'none', stroke: 'currentColor' }} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+  </svg>
+</button>
         </div>
+        
+        {errorMessage && <p style={{ color: 'red', marginBottom: '1rem' }}>{errorMessage}</p>}
         
         <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.375rem', padding: '1rem', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>

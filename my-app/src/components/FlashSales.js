@@ -6,17 +6,10 @@ import { generateImageLinks } from '../utils/imageGenerator';
 
 function FlashSales() {
   const [flashSalesProducts, setFlashSalesProducts] = useState([]);
-  const [imageLinks, setImageLinks] = useState([]);
 
   useEffect(() => {
     const selectedProducts = products.slice(0, 4);
-    const generatedImageLinks = generateImageLinks(4);
-
-    console.log('Selected products:', selectedProducts);
-    console.log('Generated image links:', generatedImageLinks);
-
     setFlashSalesProducts(selectedProducts);
-    setImageLinks(generatedImageLinks);
   }, []);
 
   return (
@@ -24,10 +17,10 @@ function FlashSales() {
       <h2 className="flash-sales-heading">Flash Sales</h2>
       <div className="centered-container">
         <div className="product-row">
-          {flashSalesProducts.map((product, index) => (
+          {flashSalesProducts.map((product) => (
             <ProductCard 
               key={product.id} 
-              product={{...product, image: imageLinks[index]}} 
+              product={product} 
             />
           ))}
         </div>
@@ -38,8 +31,6 @@ function FlashSales() {
     </section>
   );
 }
-
-export default FlashSales;
 
 
 

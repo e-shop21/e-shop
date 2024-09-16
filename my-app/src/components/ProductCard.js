@@ -1,30 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '../index.css';
 
 function ProductCard({ product }) {
   const navigate = useNavigate();
+  const [imageUrl, setImageUrl] = useState('/placeholder/default.jpg');
+
+  useEffect(() => {
+    if (product.images && product.images.length > 0) {
+      setImageUrl(product.images[0].url);
+    } else {
+      setImageUrl(`/placeholder/${product.id}.jpg`);
+    }
+  }, [product]);
 
   const handleClick = () => {
     navigate(`/product/${product.id}`, { state: { product } });
   };
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = async (e) => {
     e.stopPropagation();
-    // Add to cart logic here
-    console.log('Added to cart:', product);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/signin');
+    } else {
+      try {
+        const response = await axios.post('http://localhost:1274/api/cart', {
+          product_id: product.id,
+          quantity: 1
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('Added to cart:', response.data);
+      } catch (error) {
+        console.error('Error adding to cart:', error);
+      }
+    }
   };
 
   return (
     <div className="product-card" onClick={handleClick}>
-      {product.image ? (
-        <img src={product.image} alt={product.name} onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = `/placeholder/${product.id}.jpg`;
-        }} />
-      ) : (
-        <img src={`/placeholder/${product.id}.jpg`} alt={product.name} />
-      )}
+      <img 
+        src={imageUrl} 
+        alt={product.name} 
+        onError={() => setImageUrl(`/placeholder/${product.id}.jpg`)}
+      />
       <h3>{product.name}</h3>
       <div className="price-container">
         <span className="price">${product.price}</span>

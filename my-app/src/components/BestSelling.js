@@ -1,19 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import '../index.css';
+import React, { useState } from 'react';
 import ProductCard from './ProductCard';
-import { products } from '../dummyData/products';
-import { generateImageLinks } from '../utils/imageGenerator';
+
+
+
+
 
 function BestSelling() {
+
+
+const products = [
+  {
+    id: 1,
+    name: 'Product 1',
+    price: 100,
+    image: 'product1.jpg'
+  },
+]
+
+
   const [currentPage, setCurrentPage] = useState(0);
-  const [imageLinks, setImageLinks] = useState([]);
   const productsPerPage = 4;
   const totalPages = Math.ceil(products.length / productsPerPage);
-
-  useEffect(() => {
-    const generatedImageLinks = generateImageLinks(products.length);
-    setImageLinks(generatedImageLinks);
-  }, []);
 
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
@@ -36,19 +43,24 @@ function BestSelling() {
       <h2 className="best-selling-heading">Best Selling Products</h2>
       <div className="centered-container">
         <div className="product-row">
-          {displayedProducts.map((product, index) => (
+          {displayedProducts.map((product) => (
             <ProductCard 
               key={product.id} 
-              product={{...product, image: imageLinks[startIndex + index]}} 
+              product={product} 
             />
           ))}
         </div>
       </div>
       <div className="pagination">
-        <button onClick={handlePreviousPage} disabled={currentPage === 0}>Prev</button>
-        <button className="see-all-button">See All Our Products</button>
-        <button onClick={handleNextPage} disabled={currentPage === totalPages - 1}>Next</button>
+        <button onClick={handlePreviousPage} disabled={currentPage === 0}>
+          Previous
+        </button>
+        <span>{`Page ${currentPage + 1} of ${totalPages}`}</span>
+        <button onClick={handleNextPage} disabled={currentPage === totalPages - 1}>
+          Next
+        </button>
       </div>
+      <button className="see-all-button">See All Our Products</button>
     </section>
   );
 }

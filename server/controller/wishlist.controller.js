@@ -3,9 +3,11 @@ const Wishlist = db.Wishlist;
 
 exports.createWishlist = async (req, res) => {
     try {
-        const { user_id, product_id } = req.body;
-        if (!user_id || !product_id) {
-            return res.status(400).json({ message: "User ID and Product ID are required" });
+        const { product_id } = req.body;
+        const user_id = req.user.id; // Get user ID from the authenticated request
+
+        if (!product_id) {
+            return res.status(400).json({ message: "Product ID is required" });
         }
 
         const newWishlist = await Wishlist.create({ user_id, product_id });
@@ -22,7 +24,7 @@ exports.createWishlist = async (req, res) => {
 
 exports.findAllByUser = async (req, res) => {
     try {
-        const { user_id } = req.params;
+        const user_id = req.user.id; 
         const wishlists = await Wishlist.findAll({
             where: { user_id },
             include: [{
@@ -66,14 +68,16 @@ exports.findAllByProduct = async (req, res) => {
 
 exports.deleteWishlist = async (req, res) => {
     try {
-        const { id } = req.params;
-        const wishlist = await Wishlist.findByPk(id);
+        const { productId } = req.params;
+        const userId = req.user.id;
 
-        if (!wishlist) {
+        const result = await Wishlist.destroy({
+            where: { user_id: userId, product_id: productId }
+        });
+
+        if (result === 0) {
             return res.status(404).json({ message: "Wishlist item not found" });
         }
-
-        await wishlist.destroy();
 
         res.status(200).json({ message: "Wishlist item deleted successfully" });
     } catch (error) {
@@ -81,3 +85,27 @@ exports.deleteWishlist = async (req, res) => {
         res.status(500).json({ message: "Error deleting wishlist item", error: error.message });
     }
 };
+
+
+
+
+
+
+
+  exports.getAllWishlist = async (req, res) => {
+    try {
+      const wishlists = await Wishlist.findAll();
+      res.status(200).json({
+        message: "Wishlists retrieved successfully",
+        wishlists: wishlists
+      });
+    } catch (error) {
+      console.error('Error retrieving wishlists:', error);
+      res.status(500).json({ message: "Error retrieving wishlists", error: error.message });
+    }
+  };    
+
+
+
+
+      

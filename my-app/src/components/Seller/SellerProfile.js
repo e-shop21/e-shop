@@ -1,114 +1,134 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import SellerSidebar from './SellerSidebar';
 
 const SellerProfile = () => {
   const [profile, setProfile] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john@example.com',
-    address: '123 Main St, City, Country',
-    phone: '123-456-7890',
-    storeName: 'John\'s Electronics',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+      firstName: '',
+      lastName: '',
+      email: '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
   });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+      fetchSellerProfile();
+  }, []);
+
+  const fetchSellerProfile = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        console.log('Fetching profile with token:', token);
+        const response = await axios.get('http://localhost:1274/api/sellers/get/profile', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('Profile fetch response:', response.data);
+        const { firstName, lastName, email } = response.data.seller;
+        setProfile(prevProfile => ({ ...prevProfile, firstName, lastName, email }));
+    } catch (error) {
+        console.error('Error fetching seller profile:', error.response || error);
+        setError('Failed to fetch profile. Please try again.');
+    }
+};
 
   const handleChange = (e) => {
-    const { id, value } = e.target;
-    setProfile((prevProfile) => ({
-      ...prevProfile,
-      [id]: value
-    }));
+      const { id, value } = e.target;
+      setProfile((prevProfile) => ({
+          ...prevProfile,
+          [id]: value
+      }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission logic here
-    console.log('Profile updated:', profile);
-  };
+  const handleSubmit = async (e) => {
+      e.preventDefault();
+      setError('');
+      setSuccess('');
 
+      if (profile.newPassword !== profile.confirmPassword) {
+          setError('New passwords do not match');
+          return;
+      }
+
+      try {
+          const token = localStorage.getItem('token');
+          const response = await axios.put('http://localhost:1274/api/sellers/put/profile', {
+              firstName: profile.firstName,
+              lastName: profile.lastName,
+              email: profile.email,
+              currentPassword: profile.currentPassword,
+              newPassword: profile.newPassword
+          }, {
+              headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data.success) {
+              setSuccess('Profile updated successfully');
+              setProfile(prevProfile => ({
+                  ...prevProfile,
+                  currentPassword: '',
+                  newPassword: '',
+                  confirmPassword: ''
+              }));
+          } else {
+              setError(response.data.message || 'Failed to update profile');
+          }
+      } catch (error) {
+          console.error('Error updating profile:', error);
+          setError(error.response?.data?.message || 'Failed to update profile. Please try again.');
+      }
+  };
   return (
     <div style={styles.container}>
-      <nav style={styles.nav}>
-        <a href="/" style={styles.navLink}>Home</a>
-        <span style={styles.navSeparator}>/</span>
-        <span style={styles.navCurrent}>Seller Account</span>
-      </nav>
-      <div style={styles.welcome}>Welcome! {profile.firstName} {profile.lastName}</div>
-      
-      <div style={styles.content}>
-        <SellerSidebar />
-        <main style={styles.main}>
-          <h2 style={styles.title}>Edit Your Seller Profile</h2>
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.formRow}>
-              <div style={styles.formGroup}>
-                <label htmlFor="firstName">First Name</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  value={profile.firstName}
-                  onChange={handleChange}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="lastName">Last Name</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  value={profile.lastName}
-                  onChange={handleChange}
-                  style={styles.input}
-                />
-              </div>
+      <SellerSidebar />
+      <main style={styles.main}>
+        <nav style={styles.nav}>
+          <a href="/" style={styles.navLink}>Home</a>
+          <span style={styles.navSeparator}>/</span>
+          <span style={styles.navCurrent}>Seller Account</span>
+        </nav>
+        <div style={styles.welcome}>Welcome! {profile.firstName} {profile.lastName}</div>
+        <h2 style={styles.title}>Edit Your Seller Profile</h2>
+        {error && <div style={styles.error}>{error}</div>}
+        {success && <div style={styles.success}>{success}</div>}
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.formRow}>
+            <div style={styles.formGroup}>
+              <label htmlFor="firstName">First Name</label>
+              <input
+                type="text"
+                id="firstName"
+                value={profile.firstName}
+                onChange={handleChange}
+                style={styles.input}
+              />
             </div>
-            <div style={styles.formRow}>
-              <div style={styles.formGroup}>
-                <label htmlFor="email">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  value={profile.email}
-                  onChange={handleChange}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="phone">Phone</label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={profile.phone}
-                  onChange={handleChange}
-                  style={styles.input}
-                />
-              </div>
+            <div style={styles.formGroup}>
+              <label htmlFor="lastName">Last Name</label>
+              <input
+                type="text"
+                id="lastName"
+                value={profile.lastName}
+                onChange={handleChange}
+                style={styles.input}
+              />
             </div>
-            <div style={styles.formRow}>
-              <div style={styles.formGroup}>
-                <label htmlFor="address">Address</label>
-                <input
-                  type="text"
-                  id="address"
-                  value={profile.address}
-                  onChange={handleChange}
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label htmlFor="storeName">Store Name</label>
-                <input
-                  type="text"
-                  id="storeName"
-                  value={profile.storeName}
-                  onChange={handleChange}
-                  style={styles.input}
-                />
-              </div>
+          </div>
+          <div style={styles.formRow}>
+            <div style={styles.formGroup}>
+              <label htmlFor="email">Email</label>
+              <input
+                type="text"
+                id="email"
+                value={profile.email}
+                onChange={handleChange}
+                style={styles.input}
+              />
             </div>
-            <h3 style={styles.subtitle}>Password Changes</h3>
+          </div>
+          <div style={styles.formRow}>
             <div style={styles.formGroup}>
               <label htmlFor="currentPassword">Current Password</label>
               <input
@@ -119,6 +139,8 @@ const SellerProfile = () => {
                 style={styles.input}
               />
             </div>
+          </div>
+          <div style={styles.formRow}>
             <div style={styles.formGroup}>
               <label htmlFor="newPassword">New Password</label>
               <input
@@ -139,13 +161,13 @@ const SellerProfile = () => {
                 style={styles.input}
               />
             </div>
-            <div style={styles.buttonGroup}>
-              <button type="button" style={styles.cancelButton}>Cancel</button>
-              <button type="submit" style={styles.saveButton}>Save Changes</button>
-            </div>
-          </form>
-        </main>
-      </div>
+          </div>
+          <div style={styles.buttonGroup}>
+            <button type="button" style={styles.cancelButton} onClick={fetchSellerProfile}>Cancel</button>
+            <button type="submit" style={styles.saveButton}>Save</button>
+          </div>
+        </form>
+      </main>
     </div>
   );
 };
@@ -153,8 +175,6 @@ const SellerProfile = () => {
 const styles = {
   container: {
     fontFamily: 'Arial, sans-serif',
-    maxWidth: '1200px',
-    margin: '0 auto',
     padding: '20px',
   },
   nav: {
@@ -175,12 +195,12 @@ const styles = {
     textAlign: 'right',
     marginBottom: '20px',
   },
-  content: {
-    display: 'flex',
-  },
   main: {
-    flexGrow: 1,
-    marginLeft: '40px',
+    marginLeft: '220px', // To accommodate the fixed sidebar
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   title: {
     color: '#e74c3c',
