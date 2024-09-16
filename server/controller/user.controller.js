@@ -1,39 +1,17 @@
 const db = require('../model/_index');
 const User = db.User;
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
 
-exports.create = async (req, res) => {
-    try {
-        const { firstName, lastName, email, password } = req.body;
-        if (!firstName || !lastName || !email || !password) {
-            return res.status(400).json({ message: "All fields are required" });
-        }
 
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ message: "Email already in use" });
-        }
 
-        const newUser = await User.create({
-            firstName,
-            lastName,
-            email,
-            password,
-        });
 
-        res.status(201).json({
-            message: "User created successfully",
-            user: {
-                id: newUser.id,
-                firstName: newUser.firstName,
-                lastName: newUser.lastName,
-                email: newUser.email
-            }
-        });
-    } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(500).json({ message: "Error creating user", error: error.message });
-    }
-};
+
+
+dotenv.config();
+
+
 
 exports.findAll = async (req, res) => {
     try {
@@ -157,3 +135,64 @@ exports.delete = async (req, res) => {
         res.status(500).json({ message: "Error deleting user", error: error.message });
     }
 };
+
+
+
+
+
+exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: "Error fetching user profile", error: error.message });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { firstName, lastName, email, currentPassword, newPassword } = req.body;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (currentPassword && newPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(403).json({ message: "Current password is incorrect" });
+      }
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await user.update({ firstName, lastName, email, password: hashedPassword });
+    } else {
+      await user.update({ firstName, lastName, email });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: { id: user.id, firstName, lastName, email }
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ message: "Error updating user profile", error: error.message });
+  }
+};
+
+// ... existing code ...

@@ -3,7 +3,7 @@ const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = new Sequelize('e_c', 'root', 'root', {
     host: 'localhost',
     dialect: 'mysql',
-   
+    logging: false 
 });
 
 const db = {};
@@ -11,6 +11,7 @@ const db = {};
  db.Admin = require('./admin.model')(sequelize, DataTypes);
 db.Category = require('./category.model')(sequelize, DataTypes);
 db.Subcategory = require('./subCategory.model')(sequelize, DataTypes);
+db.Commercial = require('./commercial.model')(sequelize, DataTypes);
 db.Seller = require('./seller.model')(sequelize, DataTypes);
 db.Product = require('./product.model')(sequelize, DataTypes);
 db.User = require('./user.model')(sequelize, DataTypes);
@@ -19,7 +20,8 @@ db.Image = require('./image.model')(sequelize, DataTypes);
 db.Wishlist = require('./wishlist.model')(sequelize, DataTypes);
 db.Sold = require('./soldmodel')(sequelize, DataTypes);
 
-// Define relationships
+
+
 db.Category.hasMany(db.Subcategory, {
     foreignKey: 'category_id',
     as: 'subcategories',
@@ -92,14 +94,33 @@ db.Category.hasMany(db.Subcategory, {
     as: 'product',
   });
   
-  db.Cart.hasOne(db.Sold, {
-    foreignKey: 'cart_id',
-    as: 'sold',
-  });
-  db.Sold.belongsTo(db.Cart, {
-    foreignKey: 'cart_id',
-    as: 'cart',
-  });
+  db.User.hasMany(db.Sold, {
+    foreignKey: 'user_id',
+    as: 'soldItems',
+});
+db.Sold.belongsTo(db.User, {
+    foreignKey: 'user_id',
+    as: 'user',
+});
+
+db.Product.hasMany(db.Sold, {
+    foreignKey: 'product_id',
+    as: 'soldItems',
+});
+db.Sold.belongsTo(db.Product, {
+    foreignKey: 'product_id',
+    as: 'product',
+});
+
+ 
+db.Product.hasMany(db.Commercial, {
+  foreignKey: 'product_id',
+  as: 'commercials',
+});
+db.Commercial.belongsTo(db.Product, {
+  foreignKey: 'product_id',
+  as: 'product',
+});
 
 
   
@@ -118,19 +139,6 @@ sequelize.authenticate()
     .then(() => {
         console.log(`
 
-
-
-
-
-
-
-
-
-
-
-
-
-
           
 
             ******************************************************************
@@ -147,7 +155,7 @@ sequelize.authenticate()
         console.log('Connection Error:', err);
     });
 
-    // sequelize.sync({alter:true});
+    sequelize.sync({alter:true});
 
 
 
